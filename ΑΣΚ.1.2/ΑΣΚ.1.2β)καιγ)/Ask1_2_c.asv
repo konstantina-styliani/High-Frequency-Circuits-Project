@@ -1,0 +1,77 @@
+clear all;
+clc;
+N=100;
+f0=10^9;
+f= 0:(2*f0/N):2*f0;
+Zo=50;
+ZL=Zo;
+Zh=150; %Zhigh
+Zl=20;  %Zlow
+
+ZinA=zeros(length(f),1);
+Zin5=zeros(length(f),1);
+Zin4=zeros(length(f),1);
+Zin3=zeros(length(f),1);
+Zin2=zeros(length(f),1);
+Zin1=zeros(length(f),1);
+Ref=zeros(length(f),1);
+Ref_dB=zeros(length(f),1);
+SWR=zeros(length(f),1);
+
+
+l1=NetLength(21.903);
+bl1=bl(f,l1);
+l2=NetLength(31.426);
+bl2=bl(f,l2);
+bl3=NetLength(37.720);
+bl3=bl(f,bl3);
+bl4=bl(f,bl2);
+bl5=bl(f,l1);
+for k=1:length(f)
+    ZinA(k)=Zo;
+    Zin5(k)=Zinfun(ZinA,Zh,bl5(k));
+    Zin4(k)=Zinfun(Zin5(k),Zl,bl4(k));
+    Zin3(k)=Zinfun(Zin4(k),Zh,bl3(k));
+    Zin2(k)=Zinfun(Zin3(k),Zl,bl2(k));
+    Zin1(k)=Zinfun(Zin2(k),Zh,l1(k));
+    Ref(k)=abs((Zin1(k)-Zo)/(Zin1(k)+Zo));
+    Ref_dB(k)=20*log10(Ref(k));
+    if Ref_dB(k)<-60
+   Ref_dB(k)=-60;
+    end
+   
+    SWR(k)=(1+Ref(k))/(1-Ref(k)); 
+    if SWR(k)>10
+    SWR(k)=10;
+    end
+
+end
+kk=-10*ones(length(f),1);
+yy=2*ones(length(f),1);
+
+
+figure(1)
+plot(f,Ref_dB,'r',f,yy,'b--')
+grid on;
+xlabel('freq','r')
+ylabel('Reflection-Coefficient (dB)','y')
+
+figure(2)
+plot(f,SWR,'r',f,kk,'b--')
+grid on;
+xlabel('freq')
+ylabel('SWR','BackgroundColor')
+
+
+
+function [val]= NetLength(bl)
+val=bl/360;
+end
+
+function [val]= bl(f,l)
+val=(l.*2*f.*pi)./(10^9) ;
+end 
+
+function [val]= Zinfun(ZL,Zo,bl_)
+val= (Zo*(ZL+1i*Zo*tan(bl_)))/(Zo+1i*ZL.*tan(bl_));
+end
